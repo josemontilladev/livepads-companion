@@ -539,5 +539,13 @@
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('sw.js').catch(() => {});
     });
+    // Versión nueva de la página (SW nuevo): recargar una vez para estrenarla ya,
+    // no en la visita siguiente. Solo si ya había uno (la primera instalación no recarga).
+    if (navigator.serviceWorker.controller) {
+      let reloaded = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (reloaded) return; reloaded = true; location.reload();
+      });
+    }
   }
 })();
