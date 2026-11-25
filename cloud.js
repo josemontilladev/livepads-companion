@@ -10,8 +10,11 @@
 // ─────────────────────────────────────────────────────────────────────────
 (function () {
   var CFG = window.LP_CLOUD || null;
+  var ok = function (c) { return !!c && /^[a-z0-9]{6,32}$/i.test(c); };
   var code = new URLSearchParams(location.search).get('s');
-  if (!CFG || !code || !/^[a-z0-9]{6,32}$/i.test(code)) return;
+  if (ok(code)) { try { localStorage.setItem('lpc-code', code); } catch (_) {} }
+  else { try { code = localStorage.getItem('lpc-code'); } catch (_) { code = null; } }
+  if (!CFG || !ok(code)) return;
 
   function cid() {
     try { var v = localStorage.getItem('lpc-cid'); if (v) return v; v = Math.random().toString(36).slice(2, 12); localStorage.setItem('lpc-cid', v); return v; }

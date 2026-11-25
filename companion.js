@@ -304,8 +304,47 @@
     elLiveDot.classList.toggle('is-pulsing', !!playing);
   }
 
+  // Tema de LivePads: mismos colores que la cabina. Se guarda para que, al
+  // abrir la página otra vez, salga ya con su tema antes de conectar.
+  function hexRgb(h) {
+    const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(h || '').trim());
+    if (!m) return null;
+    let x = m[1]; if (x.length === 3) x = x.replace(/./g, (c) => c + c);
+    return [0, 2, 4].map((i) => parseInt(x.slice(i, i + 2), 16));
+  }
+  const rgba = (h, a) => { const c = hexRgb(h); return c ? 'rgba(' + c.join(',') + ',' + a + ')' : ''; };
+  let themeJson = '';
+  function applyTheme(t) {
+    if (!t || !t.bg) return;
+    const j = JSON.stringify(t);
+    if (j === themeJson) return;
+    themeJson = j;
+    try { localStorage.setItem('lpc.theme', j); } catch (_) {}
+    const bgRgb = hexRgb(t.bg) || [10, 10, 20];
+    const light = (bgRgb[0] * 299 + bgRgb[1] * 587 + bgRgb[2] * 114) / 1000 > 150;
+    const fg = t.text || (light ? '#0f172a' : '#ffffff');
+    const v = {
+      '--bg': t.bg, '--bg-elev': t.bg2 || t.bg, '--bg-sheet': t.bg2 || t.bg,
+      '--fg': fg, '--fg-dim': t.muted || rgba(fg, 0.6),
+      '--accent': t.accent, '--chord': t.accent, '--section': t.accent2 || t.accent,
+      '--lyric': rgba(fg, 0.92), '--border': t.border || rgba(fg, 0.08),
+      '--on-accent': t.onAccent || (light ? '#ffffff' : '#0a0a14'),
+      '--top-bg': rgba(t.bg, 0.92), '--bar-bg': rgba(t.bg, 0.96),
+      '--soft': rgba(fg, 0.06), '--soft-2': rgba(fg, 0.12), '--line': rgba(fg, 0.16),
+      '--fg-soft': rgba(fg, 0.65), '--scrim': light ? 'rgba(15,23,42,.45)' : 'rgba(0,0,0,.6)',
+    };
+    const s = document.documentElement.style;
+    for (const k in v) if (v[k]) s.setProperty(k, v[k]);
+    document.documentElement.dataset.light = light ? '1' : '';
+    document.body.style.background = t.gradient || t.bg;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', t.bg);
+  }
+  try { const saved = localStorage.getItem('lpc.theme'); if (saved) applyTheme(JSON.parse(saved)); } catch (_) {}
+
   function render(msg, repaint) {
     if (!msg) return;
+    if (msg.theme) applyTheme(msg.theme);
 
     if (msg.type === 'cue') { showCue(msg.text, msg.from); return; }
     if (msg.type === 'stage') { renderStage(msg); return; }
@@ -367,6 +406,13 @@
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     const url = `${proto}//${location.host}`;
 
+    if (!window.LP_CLOUD_SOCKET && location.protocol === 'https:') {
+      setConn('closed', 'Sin enlace');
+      const t = document.querySelector('.empty-title'), s = document.querySelector('.empty-sub');
+      if (t) t.textContent = 'Escanea el QR de LivePads';
+      if (s) s.textContent = 'En LivePads abre Companion y escanea su código QR con este móvil (o abre el enlace que aparece debajo).';
+      return;
+    }
     try { ws = window.LP_CLOUD_SOCKET ? window.LP_CLOUD_SOCKET() : new WebSocket(url); }
     catch (e) { setConn('closed', 'Sin conexión'); scheduleReconnect(); return; }
 
