@@ -3,7 +3,7 @@
 // survives a brief WiFi blip without showing a browser error page.
 // WebSocket traffic isn't intercepted; only static assets are.
 
-const CACHE = 'livepads-companion-v5';   // v5: tema de LivePads; v3: modo líder, indicaciones y acordes por instrumento
+const CACHE = 'livepads-companion-v6';   // v6: recarga al actualizar; v5: tema de LivePads; v3: modo líder, indicaciones y acordes por instrumento
 const SHELL = [
   './',
   './index.html',
